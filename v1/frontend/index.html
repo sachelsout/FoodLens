@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FoodLens - OCR & Structured Menu</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload a menu image</h2>
+  <input type="file" id="image-input" accept="image/*" />
+  <button id="scan-btn">Scan Menu</button>
+
+  <h3>🔍 Raw OCR Text</h3>
+  <pre id="ocr-output">...</pre>
+
+  <h3>🤖 Structured JSON</h3>
+  <pre id="structured-output">...</pre>
+
+  <script>
+    document.getElementById('scan-btn').addEventListener('click', async () => {
+      const input = document.getElementById('image-input');
+      if (!input.files.length) {
+        alert('Please upload a menu image.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+
+      try {
+        const res = await fetch('http://localhost:8000/api/extract', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        console.log("API response:", data);
+        console.log("typeof raw_ocr:", typeof data.raw_ocr);
+        console.log("raw_ocr value:", data.raw_ocr);
+
+        if (data.raw_ocr) {
+          document.getElementById('ocr-output').textContent = data.raw_ocr;
+          document.getElementById('structured-output').textContent = JSON.stringify(data.structured || {}, null, 2);
+        } else if (typeof data === 'object') {
+          document.getElementById('ocr-output').textContent = '[No raw OCR text received]';
+          document.getElementById('structured-output').textContent = JSON.stringify(data, null, 2);
+        } else {
+          document.getElementById('ocr-output').textContent = '[No raw OCR text received]';
+          document.getElementById('structured-output').textContent = data;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Something went wrong. See console.');
+      }
+    });
+  </script>
+</body>
+</html>

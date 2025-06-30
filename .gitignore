@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Virtual environment folder (backend)
+venv/
+env/
+
+# Python environment variables file
+.env
+
+# FastAPI / Python logs and caches
+*.log
+*.sqlite3
+*.pytest_cache/
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Node.js dependencies (if any frontend tools added later)
+node_modules/
+
+# Frontend build/dist folders (if you add build step later)
+dist/
+build/
