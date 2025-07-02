@@ -11,8 +11,8 @@ The goal is to let users upload or take a photo of a menu and get a beautiful di
 
 ### Current progress (v1):
 
-For now, the app accepts a menu photo, uses OCR to extract the raw text, and displays it.  
-This is the foundational step before building structured data extraction and richer features.
+For now, the app accepts a menu photo, uses OCR to extract the raw text, parses it into structured menu data using an LLM, fetches images for dishes, and displays the full digital menu.  
+This is a complete end-to-end MVP from image upload to rich digital menu output.
 
 ---
 
@@ -23,18 +23,20 @@ FoodLens/v1/
 ├── backend/
 │ ├── app/                  # FastAPI backend source code
 │ │  ├── routes
-│ │  │   └── extract.py     # extracting text from input menu image
+│ │  │   └── extract.py     # extracting text from input menu image and calling LLM + image fetch
 │ │  ├── services
-│ │  │   ├── llm.py         # Gemini API code
+│ │  │   ├── llm.py         # OpenRouter LLM API code & structured menu extraction
+│ │  │   ├── images.py      # Unsplash API code to fetch dish images
 │ │  │   ├── ocr.py         # Tesseract OCR code
-│ │  │   └── utils.py       # storing helper functions (currently empty)
-│ │  ├── __init__.py        # currently empty (might be used in future to initialize stuff like env vars for dev/stage/prod)
+│ │  │   └── utils.py       # helper functions (currently empty)
+│ │  ├── __init__.py        # may be used later for env setup or initialization
 │ │  └── main.py            # backend entry point
 │ ├── venv/                 # Python virtual environment (ignored in Git)
 │ ├── requirements.txt      # Backend dependencies
 │ └── .env                  # Environment variables (API keys, ignored)
 ├── frontend/
 │ └── index.html            # Simple frontend UI for image upload and results
+
 ```
 
 ---
@@ -46,6 +48,20 @@ FoodLens/v1/
 - Python 3.8+
 - [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) installed and added to your system PATH
 - Git (optional, for cloning repo)
+- <b>API keys required:</b>
+
+    - OpenRouter API key (for LLM calls)
+
+    - Unsplash API key (for dish image fetching)
+
+Store these keys securely in a ```.env``` file inside the backend folder:
+
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key_here
+```
+#### Important: Add ```.env``` to ```.gitignore``` to keep your keys private.
+
 
 ---
 
@@ -89,23 +105,25 @@ Make sure the backend server is running at ```http://localhost:8000```.
 
 3. Click Scan Menu.
 
-4. See the raw OCR text extracted from your image.
+4. View the extracted structured menu with item names, descriptions, prices, and images.
 
 ## Screenshot
 
-Here is the FoodLens v1 interface after uploading a menu image and extracting text:
+Here is the FoodLens v1 interface showing the digital menu after uploading and processing a menu image:
 
-![FoodLens v1 UI](./docs/screenshot-v1.png)
+![FoodLens v1 UI](./docs/screenshot-v2.png)
 
-*The raw OCR text appears below the upload button once a menu image is scanned.*
+---
 
 ## Future Plans
 
-- Integrate Large Language Model (LLM) to parse OCR text into structured menu data.
+- Improve OCR accuracy and parsing
 
-- Improve frontend UI/UX.
+- Add menu translation features
 
-- Add features like menu translation, dish image fetching, and more.
+- Enhance frontend UI/UX
+
+- Support more cuisine-specific image fetching and metadata
 
 ## Contributing
 
