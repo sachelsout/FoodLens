@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-print("GEMINI_API_KEY =", os.getenv("GEMINI_API_KEY"))  # you can remove this after testing
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

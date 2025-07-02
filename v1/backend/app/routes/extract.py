@@ -8,10 +8,10 @@ router = APIRouter()
 async def extract_menu(file: UploadFile = File(...)):
     try:
         text = await extract_text_from_image(file)
-        # structured = await extract_structured_menu(text)
+        structured = await extract_structured_menu(text)
         return {
             "raw_ocr": text,
-            "structured": {}
+            "structured": structured
         }
     
     except Exception as e:
