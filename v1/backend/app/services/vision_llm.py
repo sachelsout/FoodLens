@@ -4,7 +4,7 @@ import os
 import json
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODEL_NAME = "openrouter/horizon-alpha"
+MODEL_NAME = "openrouter/horizon-beta"
 
 headers = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
