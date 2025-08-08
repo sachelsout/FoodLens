@@ -88,6 +88,9 @@
     </div>
   </div>
 
+<!-- Config file for API base URL -->
+<script src = "config.js"></script>
+
 <script>
   function renderMenu(outputElement, structured) {
     outputElement.innerHTML = "";
@@ -159,8 +162,9 @@
     visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
 
     // Endpoints
-    const ocrEndpoint = "http://localhost:8000/api/extract";
-    const visionEndpoint = "http://localhost:8000/api/vision-extract";
+    const API_BASE = window.config.API_BASE_URL;
+    const ocrEndpoint = `${API_BASE}/extract`;
+    const visionEndpoint = `${API_BASE}/vision-extract`;
 
     try {
       // Run both requests in parallel
