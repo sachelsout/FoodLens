@@ -16,6 +16,8 @@
       border-radius: 8px;
       padding: 10px;
       margin-bottom: 15px;
+      width: 100%;
+      max-width: 600px; /* keeps cards nicely readable */
     }
 
     .dish-card img {
@@ -28,10 +30,12 @@
       margin-top: 30px;
       font-size: 1.5rem;
       color: #333;
+      text-align: center;
     }
 
     #menu-output h2 {
       margin-top: 40px;
+      text-align: center;
     }
 
     button {
@@ -47,25 +51,23 @@
       background: #005fa3;
     }
 
-    input[type="file"], select {
+    input[type="file"] {
       margin-bottom: 10px;
     }
 
-    /* Flex container for side-by-side output */
-    #results-container {
-      display: flex;
-      gap: 20px;
+    #vision-output {
       margin-top: 20px;
-    }
-
-    #ocr-output, #vision-output {
-      flex: 1;
       border: 1px solid #ccc;
       border-radius: 8px;
-      padding: 10px;
+      padding: 20px;
       min-height: 300px;
       overflow-y: auto;
       background: #fafafa;
+
+      /* Center content */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
   </style>
 </head>
@@ -74,22 +76,16 @@
 
   <!-- File input -->
   <input type="file" id="image-input" accept="image/*" />
-  <button id="scan-btn">Scan Menu (Both Methods)</button>
+  <button id="scan-btn">Scan Menu</button>
 
-  <!-- Side-by-side outputs -->
-  <div id="results-container">
-    <div>
-      <h3>OCR + LLM Result</h3>
-      <div id="ocr-output"></div>
-    </div>
-    <div>
-      <h3>Vision LLM Result</h3>
-      <div id="vision-output"></div>
-    </div>
+  <!-- Vision LLM output -->
+  <div>
+    <h3 style="text-align:center;">Vision LLM Result</h3>
+    <div id="vision-output"></div>
   </div>
 
 <!-- Config file for API base URL -->
-<script src = "config.js"></script>
+<script src="config.js"></script>
 
 <script>
   function renderMenu(outputElement, structured) {
@@ -154,34 +150,18 @@
     const formData = new FormData();
     formData.append('file', input.files[0]);
 
-    const ocrOutput = document.getElementById('ocr-output');
     const visionOutput = document.getElementById('vision-output');
-
-    // Show loading states
-    ocrOutput.innerHTML = "<p>Scanning with OCR + LLM...</p>";
     visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
 
-    // Endpoints
     const API_BASE = window.config.API_BASE_URL;
-    const ocrEndpoint = `${API_BASE}/extract`;
     const visionEndpoint = `${API_BASE}/vision-extract`;
 
     try {
-      // Run both requests in parallel
-      const [ocrRes, visionRes] = await Promise.all([
-        fetch(ocrEndpoint, { method: 'POST', body: formData }),
-        fetch(visionEndpoint, { method: 'POST', body: formData })
-      ]);
-
-      const ocrData = await ocrRes.json();
-      const visionData = await visionRes.json();
-
-      renderMenu(ocrOutput, ocrData.structured);
-      renderMenu(visionOutput, visionData.structured);
-
+      const res = await fetch(visionEndpoint, { method: 'POST', body: formData });
+      const data = await res.json();
+      renderMenu(visionOutput, data.structured);
     } catch (err) {
       console.error("Error during fetch/render:", err);
-      ocrOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
       visionOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
     }
   });
