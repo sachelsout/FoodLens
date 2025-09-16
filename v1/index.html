@@ -73,6 +73,7 @@
 
     document.getElementById('scan-btn').addEventListener('click', async () => {
       const input = document.getElementById('image-input');
+      const output = document.getElementById('vision-output');
       if (!input.files.length) {
         alert('Please upload a menu image.');
         return;
@@ -81,14 +82,27 @@
       const file = input.files[0];
       const reader = new FileReader();
       reader.onload = async () => {
-        const imgBase64 = reader.result.split(',')[1]; // remove data:image/*;base64,
-        const res = await fetch(`${window.config.API_BASE_URL}/vision_extract`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image_base64: imgBase64 })
-        });
-        const data = await res.json();
-        renderMenu(document.getElementById('vision-output'), data.structured);
+        try {
+          const imgBase64 = reader.result.split(',')[1]; // remove data:image/*;base64,
+          const res = await fetch(`${window.config.API_BASE_URL}/vision_extract`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image_base64: imgBase64 })
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            output.innerHTML = `<p style='color:red'>Request failed: ${res.status} ${text}</p>`;
+            return;
+          }
+          const data = await res.json();
+          if (data.error) {
+            output.innerHTML = `<p style='color:red'>Server error: ${data.error}</p>`;
+            return;
+          }
+          renderMenu(output, data.structured);
+        } catch (err) {
+          output.innerHTML = `<p style='color:red'>Unexpected error: ${err}</p>`;
+        }
       };
       reader.readAsDataURL(file);
     });

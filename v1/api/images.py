@@ -1,10 +1,15 @@
 import os
 import httpx
 
-UNSPLASH_API_KEY = os.environ["UNSPLASH_API_KEY"]
+UNSPLASH_API_KEY = os.getenv("UNSPLASH_API_KEY")
+
 
 def fetch_unsplash_images(structured: dict) -> dict:
     if not structured or "categories" not in structured:
+        return structured
+
+    if not UNSPLASH_API_KEY:
+        # Skip image enrichment if key is not set
         return structured
 
     for category in structured.get("categories", []):
@@ -25,5 +30,5 @@ def fetch_unsplash_images(structured: dict) -> dict:
                         item["image_url"] = data["results"][0]["urls"]["small"]
             except Exception as e:
                 item["image_url"] = None
-                print(f"⚠️ Unsplash fetch failed for {query}: {e}")
+                print(f"Unsplash fetch failed for {query}: {e}")
     return structured
