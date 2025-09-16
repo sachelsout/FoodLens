@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FoodLens - Digital Menu</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    .dish-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 15px; max-width: 600px; }
+    .dish-card img { max-width: 100%; border-radius: 6px; margin-top: 8px; }
+    .category-title { margin-top: 30px; font-size: 1.5rem; color: #333; text-align: center; }
+    #vision-output { margin-top: 20px; border: 1px solid #ccc; border-radius: 8px; padding: 20px; min-height: 300px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; align-items: center; }
+    button { padding: 8px 12px; border: none; background: #0077cc; color: white; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #005fa3; }
+    input[type="file"] { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Upload a menu image</h2>
+  <input type="file" id="image-input" accept="image/*" />
+  <button id="scan-btn">Scan Menu</button>
+
+  <div>
+    <h3 style="text-align:center;">Vision LLM Result</h3>
+    <div id="vision-output"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    async function renderMenu(outputElement, structured) {
+      outputElement.innerHTML = "";
+      if (!structured || !Array.isArray(structured.categories) || structured.categories.length === 0) {
+        outputElement.innerHTML = "<p style='color:red'>Invalid structured data. Check backend output.</p>";
+        return;
+      }
+      if (structured.restaurant_name) {
+        const title = document.createElement('h2');
+        title.textContent = structured.restaurant_name;
+        outputElement.appendChild(title);
+      }
+      for (const category of structured.categories) {
+        const catTitle = document.createElement('h3');
+        catTitle.className = "category-title";
+        catTitle.textContent = category.name || "Unnamed Category";
+        outputElement.appendChild(catTitle);
+
+        for (const item of category.items || []) {
+          const card = document.createElement('div');
+          card.className = "dish-card";
+
+          const name = document.createElement('h4');
+          name.textContent = item.name || "Unnamed item";
+          const desc = document.createElement('p');
+          desc.textContent = item.description || "No description available.";
+          const price = document.createElement('p');
+          price.textContent = item.price ? `Price: ${item.price}` : "Price not listed";
+
+          card.appendChild(name);
+          card.appendChild(desc);
+          card.appendChild(price);
+
+          if (item.image_url && item.image_url.startsWith("http")) {
+            const img = document.createElement('img');
+            img.src = item.image_url;
+            img.alt = item.name;
+            img.onerror = () => img.remove();
+            card.appendChild(img);
+          }
+
+          outputElement.appendChild(card);
+        }
+      }
+    }
+
+    document.getElementById('scan-btn').addEventListener('click', async () => {
+      const input = document.getElementById('image-input');
+      if (!input.files.length) {
+        alert('Please upload a menu image.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+
+      const visionOutput = document.getElementById('vision-output');
+      visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
+
+      const visionEndpoint = `${window.config.API_BASE_URL}/vision_extract`;
+
+      try {
+        const res = await fetch(visionEndpoint, { method: 'POST', body: formData });
+        const data = await res.json();
+        renderMenu(visionOutput, data.structured);
+      } catch (err) {
+        console.error("Error during fetch/render:", err);
+        visionOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
+      }
+    });
+  </script>
+</body>
+</html>

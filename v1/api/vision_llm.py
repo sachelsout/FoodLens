@@ -1,0 +1,32 @@
+import os
+import httpx
+
+OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
+
+def call_vision_llm(img_b64: str):
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "meta-llama/llama-3.2-vision",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Extract restaurant name, categories, and items with description and price from menu image."
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Here is the menu image:"},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                ]
+            }
+        ]
+    }
+
+    with httpx.Client() as client:
+        resp = client.post(url, headers=headers, json=payload, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
