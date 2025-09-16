@@ -24,13 +24,8 @@
     <div id="vision-output"></div>
   </div>
 
-  <!-- Load config.js first -->
-  <script src="./config.js"></script>
-
+  <script src="config.js"></script>
   <script>
-    // Ensure API_BASE_URL is defined
-    const API_BASE = window.config?.API_BASE_URL || "/api";
-
     async function renderMenu(outputElement, structured) {
       outputElement.innerHTML = "";
       if (!structured || !Array.isArray(structured.categories) || structured.categories.length === 0) {
@@ -83,27 +78,19 @@
         return;
       }
 
+      const file = input.files[0];
       const reader = new FileReader();
       reader.onload = async () => {
-        const imgBase64 = reader.result.split(",")[1]; // remove data:image/...;base64, prefix
-
-        const visionOutput = document.getElementById('vision-output');
-        visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
-
-        try {
-          const res = await fetch(`${API_BASE}/vision_extract`, {
-            method: 'POST',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image_base64: imgBase64 })
-          });
-          const data = await res.json();
-          renderMenu(visionOutput, data.structured);
-        } catch (err) {
-          console.error("Error during fetch/render:", err);
-          visionOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
-        }
+        const imgBase64 = reader.result.split(',')[1]; // remove data:image/*;base64,
+        const res = await fetch(`${window.config.API_BASE_URL}/vision_extract`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: imgBase64 })
+        });
+        const data = await res.json();
+        renderMenu(document.getElementById('vision-output'), data.structured);
       };
-      reader.readAsDataURL(input.files[0]);
+      reader.readAsDataURL(file);
     });
   </script>
 </body>
