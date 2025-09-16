@@ -1,7 +1,8 @@
 import json
-from .vision_llm import call_vision_llm
-from .images import fetch_unsplash_images
-from .vision_response import structure_response
+from api.vision_llm import call_vision_llm
+from api.images import fetch_unsplash_images
+from api.vision_response import structure_response
+
 
 def handler(request):
     try:
