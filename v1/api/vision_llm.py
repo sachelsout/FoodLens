@@ -34,7 +34,14 @@ def call_vision_llm(img_b64: str):
         ],
         "temperature": 0.2,
     }
-    with httpx.Client(timeout=60) as client:
-        resp = client.post(url, headers=headers, json=payload)
-        resp.raise_for_status()
-        return resp.json()
+    try:
+        with httpx.Client(timeout=60) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text if e.response is not None else str(e)
+        status = e.response.status_code if e.response is not None else "?"
+        raise RuntimeError(f"OpenRouter HTTP {status}: {detail}")
+    except httpx.RequestError as e:
+        raise RuntimeError(f"OpenRouter request failed: {e}")
