@@ -10,7 +10,7 @@ def call_vision_llm(img_b64: str):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "meta-llama/llama-3.2-vision",
+        "model": "mistralai/mistral-small-3.2-24b-instruct:free",
         "messages": [
             {"role": "system", "content": "Extract restaurant name, categories, and items with description and price from menu image."},
             {"role": "user", "content": [
