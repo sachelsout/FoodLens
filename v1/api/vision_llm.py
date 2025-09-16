@@ -1,7 +1,8 @@
 import os
 import httpx
+import json
 
-OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 def call_vision_llm(img_b64: str):
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -20,13 +21,13 @@ def call_vision_llm(img_b64: str):
                 "role": "user",
                 "content": [
                     {"type": "text", "text": "Here is the menu image:"},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img_b64}"}
                 ]
             }
         ]
     }
 
-    with httpx.Client() as client:
-        resp = client.post(url, headers=headers, json=payload, timeout=60)
-        resp.raise_for_status()
-        return resp.json()
+    with httpx.Client(timeout=60) as client:
+        res = client.post(url, headers=headers, json=payload)
+        res.raise_for_status()
+        return res.json()

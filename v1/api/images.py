@@ -1,10 +1,9 @@
 import os
 import httpx
 
-UNSPLASH_API_KEY = os.environ["UNSPLASH_API_KEY"]
+UNSPLASH_API_KEY = os.environ.get("UNSPLASH_API_KEY")
 
 def fetch_unsplash_images(structured: dict) -> dict:
-    """Loop through structured categories/items and attach image URLs from Unsplash"""
     if not structured or "categories" not in structured:
         return structured
 
@@ -15,16 +14,18 @@ def fetch_unsplash_images(structured: dict) -> dict:
                 continue
 
             try:
-                url = f"https://api.unsplash.com/search/photos"
-                params = {"query": query, "per_page": 1}
+                url = "https://api.unsplash.com/search/photos"
+                params = {"query": query + " food", "per_page": 1}
                 headers = {"Authorization": f"Client-ID {UNSPLASH_API_KEY}"}
 
-                with httpx.Client() as client:
-                    resp = client.get(url, headers=headers, params=params, timeout=10)
-                    resp.raise_for_status()
-                    data = resp.json()
+                with httpx.Client(timeout=10) as client:
+                    res = client.get(url, headers=headers, params=params)
+                    res.raise_for_status()
+                    data = res.json()
                     if data["results"]:
                         item["image_url"] = data["results"][0]["urls"]["small"]
+                    else:
+                        item["image_url"] = None
             except Exception as e:
                 item["image_url"] = None
                 print(f"⚠️ Unsplash fetch failed for {query}: {e}")

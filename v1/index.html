@@ -78,22 +78,30 @@
         return;
       }
 
-      const formData = new FormData();
-      formData.append('file', input.files[0]);
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const img_b64 = reader.result.split(',')[1]; // remove data:image/... prefix
 
-      const visionOutput = document.getElementById('vision-output');
-      visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
+        const visionOutput = document.getElementById('vision-output');
+        visionOutput.innerHTML = "<p>Scanning with Vision LLM...</p>";
 
-      const visionEndpoint = `${window.config.API_BASE_URL}/vision_extract`;
+        const visionEndpoint = `${window.config.API_BASE_URL}/vision_extract`;
 
-      try {
-        const res = await fetch(visionEndpoint, { method: 'POST', body: formData });
-        const data = await res.json();
-        renderMenu(visionOutput, data.structured);
-      } catch (err) {
-        console.error("Error during fetch/render:", err);
-        visionOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
-      }
+        try {
+          const res = await fetch(visionEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_base64: img_b64 })
+          });
+          const data = await res.json();
+          renderMenu(visionOutput, data.structured);
+        } catch (err) {
+          console.error("Error during fetch/render:", err);
+          visionOutput.innerHTML = "<p style='color:red'>Something went wrong. See console.</p>";
+        }
+      };
+      reader.readAsDataURL(file);
     });
   </script>
 </body>
