@@ -9,7 +9,12 @@ def fetch_unsplash_images(structured: dict) -> dict:
         return structured
 
     if not UNSPLASH_API_KEY:
-        # Skip image enrichment if key is not set
+        # Fallback: use Unsplash Source (no API key required) to provide a best-effort image URL
+        for category in structured.get("categories", []):
+            for item in category.get("items", []) or []:
+                query = (item.get("name") or "food").strip()
+                # 600x400 random image related to the query
+                item["image_url"] = f"https://source.unsplash.com/600x400/?{query}"
         return structured
 
     for category in structured.get("categories", []):
