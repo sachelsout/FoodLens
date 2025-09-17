@@ -7,8 +7,9 @@ from api.vision_response import structure_response
 app = Flask(__name__)
 
 
-@app.route("/", methods=["POST"]) 
-def vision_extract():
+@app.route("/", defaults={"path": ""}, methods=["POST"]) 
+@app.route("/<path:path>", methods=["POST"]) 
+def vision_extract(path: str = ""):
     try:
         data = request.get_json(silent=True) or {}
         img_b64 = data.get("image_base64")
