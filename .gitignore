@@ -1,9 +1,6 @@
 # Ignore virtual environment
 venv/
 
-# Ignore images you don't want in the repo
-image.png
-
 # Optional: common OS and Python ignores
 __pycache__/
 *.pyc
