@@ -1,7 +1,5 @@
 import json
 
-
 def handler(request):
-    return {"statusCode": 200, "body": json.dumps({"ok": True})}
-
-
+    return (200, {"Content-Type": "application/json"},
+            json.dumps({"ok": True}))
