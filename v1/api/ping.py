@@ -1,10 +1,8 @@
-import json
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 
-def handler(request):
-    return {"statusCode": 200, "headers": {"Content-Type": "application/json"}, "body": json.dumps({"ok": True})}
-
-
-def app(environ, start_response):
-    start_response("200 OK", [("Content-Type", "application/json")])
-    return [json.dumps({"ok": True}).encode("utf-8")]
+@app.route("/", methods=["GET"]) 
+def ping():
+    return jsonify({"ok": True})

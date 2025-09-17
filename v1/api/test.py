@@ -1,4 +1,10 @@
-def handler(request):
-    return 200, {"Content-Type": "text/plain"}, "ok"
+from flask import Flask, Response
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=["GET"]) 
+def test():
+    return Response("ok", mimetype="text/plain")
 
 
