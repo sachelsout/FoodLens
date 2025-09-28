@@ -79,12 +79,20 @@
     }
 
     .upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 200px;        /* ensures a good box height */
+      padding: 2.5rem 2rem;
+      box-sizing: border-box;
       border: 2px dashed var(--border-color);
       border-radius: var(--radius-md);
-      padding: 3rem 2rem;
       text-align: center;
       transition: all 0.3s ease;
       cursor: pointer;
+      background-color: var(--surface-color);
       position: relative;
     }
 
@@ -597,13 +605,15 @@
     </header>
 
     <section class="upload-section">
-      <div class="upload-area" id="upload-area">
+      <!-- Use label instead of div for click handling -->
+      <label class="upload-area" for="image-input" id="upload-area">
         <div class="upload-icon">📷</div>
         <div class="upload-text">Drop your menu image here</div>
         <div class="upload-subtext">or click to browse files</div>
-        <input type="file" id="image-input" accept="image/*" aria-label="Upload menu image" />
-      </div>
-      
+      </label>
+
+      <input type="file" id="image-input" accept="image/*" aria-label="Upload menu image" style="display:none;" />
+
       <div class="file-info" id="file-info">
         <div class="file-name" id="file-name"></div>
         <div class="file-size" id="file-size"></div>
@@ -621,6 +631,7 @@
         <button id="clear-btn" class="btn btn-secondary" style="display: none;">Clear</button>
       </div>
     </section>
+
 
     <section class="result-section">
       <div class="result-header">
@@ -793,13 +804,9 @@
       }
     });
 
-    uploadArea.addEventListener('click', () => {
-      imageInput.click();
-    });
-
     imageInput.addEventListener('change', (e) => {
       handleFileSelect(e.target.files[0]);
-      // clearFileInput(); // Clear input to allow selecting same file again
+      clearFileInput(); // Clear input to allow selecting same file again
     });
 
     // Clear button
