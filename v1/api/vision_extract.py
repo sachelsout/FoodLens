@@ -1,7 +1,8 @@
 import json
 from flask import Flask, request, jsonify
 from api.vision_llm import call_vision_llm
-from api.images import fetch_unsplash_images
+#from api.images import fetch_unsplash_images
+from api.image_generation import fetch_pollinations_images
 from api.vision_response import structure_response
 
 app = Flask(__name__)
@@ -18,7 +19,7 @@ def vision_extract(path: str = ""):
 
         llm_result = call_vision_llm(img_b64)
         structured = structure_response(llm_result)
-        structured = fetch_unsplash_images(structured)
+        structured = fetch_pollinations_images(structured)
 
         return jsonify({"structured": structured}), 200
     except Exception as e:
