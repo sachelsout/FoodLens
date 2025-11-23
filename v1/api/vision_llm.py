@@ -15,7 +15,7 @@ def call_vision_llm(img_b64: str):
     }
     payload = {
         # TODO: Replace with a valid OpenRouter vision model slug configured for your account
-        "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+        "model": "nvidia/nemotron-nano-12b-v2-vl:free",
         "messages": [
             {
                 "role": "system",
