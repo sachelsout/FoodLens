@@ -1,16 +1,25 @@
-import json
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
 from api.vision_llm import call_vision_llm
 #from api.images import fetch_unsplash_images
-from api.image_generation import fetch_pollinations_images
+from api.image_generation import build_image_prompt, generate_cloudflare_image
 from api.vision_response import structure_response
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 
 
-@app.route("/", defaults={"path": ""}, methods=["POST"]) 
-@app.route("/<path:path>", methods=["POST"]) 
-def vision_extract(path: str = ""):
+@app.route("/", methods=["GET"])
+def index():
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.route("/config.js", methods=["GET"])
+def config_js():
+    return send_from_directory(BASE_DIR, "config.js")
+
+
+def _handle_vision_extract():
     try:
         data = request.get_json(silent=True) or {}
         img_b64 = data.get("image_base64")
@@ -19,8 +28,48 @@ def vision_extract(path: str = ""):
 
         llm_result = call_vision_llm(img_b64)
         structured = structure_response(llm_result)
-        structured = fetch_pollinations_images(structured)
+
+        if not isinstance(structured, dict):
+            return jsonify({"error": "Invalid response format from vision model"}), 502
+
+        if structured.get("error"):
+            return jsonify({"error": structured["error"]}), 502
 
         return jsonify({"structured": structured}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def _handle_generate_item_image():
+    try:
+        data = request.get_json(silent=True) or {}
+        item = data.get("item") or {}
+        category_name = data.get("category_name")
+
+        if not isinstance(item, dict):
+            return jsonify({"error": "Invalid item payload"}), 400
+
+        item_name = item.get("name")
+        if not item_name:
+            return jsonify({"error": "Missing item name"}), 400
+
+        category = {"name": category_name} if category_name else {}
+        prompt = build_image_prompt(item, category)
+        image_url = generate_cloudflare_image(prompt)
+
+        return jsonify({"image_url": image_url}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/vision_extract", methods=["POST"])
+@app.route("/api/vision_extract/<path:path>", methods=["POST"])
+@app.route("/", defaults={"path": ""}, methods=["POST"])
+@app.route("/<path:path>", methods=["POST"])
+def vision_extract(path: str = ""):
+    return _handle_vision_extract()
+
+
+@app.route("/api/generate_item_image", methods=["POST"])
+def generate_item_image():
+    return _handle_generate_item_image()

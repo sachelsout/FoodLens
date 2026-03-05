@@ -2,6 +2,7 @@ import os
 import httpx
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-3-12b-it:free")
 
 
 def call_vision_llm(img_b64: str):
@@ -14,20 +15,20 @@ def call_vision_llm(img_b64: str):
         "Content-Type": "application/json"
     }
     payload = {
-        # TODO: Replace with a valid OpenRouter vision model slug configured for your account
-        "model": "nvidia/nemotron-nano-12b-v2-vl:free",
+        "model": OPENROUTER_MODEL,
         "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a strict JSON formatter. Respond with ONLY compact JSON with keys: "
-                    "restaurant_name (string), categories (array of {name, items}), and items (array of {name, description, price})."
-                ),
-            },
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Extract structured menu from this image. Return only JSON."},
+                    {
+                        "type": "text",
+                        "text": (
+                            "Extract a structured menu from this image and respond with ONLY compact JSON. "
+                            "Required shape: {\"restaurant_name\": string, \"categories\": [{\"name\": string, \"items\": [{\"name\": string, \"description\": string, \"price\": string}]}]}. "
+                            "For every item, description must be 2 to 4 words. "
+                            "Do not include markdown, explanations, or extra keys."
+                        ),
+                    },
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}},
                 ],
             },
@@ -42,6 +43,8 @@ def call_vision_llm(img_b64: str):
     except httpx.HTTPStatusError as e:
         detail = e.response.text if e.response is not None else str(e)
         status = e.response.status_code if e.response is not None else "?"
-        raise RuntimeError(f"OpenRouter HTTP {status}: {detail}")
+        raise RuntimeError(
+            f"OpenRouter HTTP {status} (model={OPENROUTER_MODEL}): {detail}"
+        )
     except httpx.RequestError as e:
         raise RuntimeError(f"OpenRouter request failed: {e}")

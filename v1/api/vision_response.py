@@ -3,6 +3,32 @@ import re
 from typing import Any, Dict
 
 
+def _tokenize_words(text: str) -> list[str]:
+    return re.findall(r"[A-Za-z0-9']+", text or "")
+
+
+def _fallback_description_from_name(name: str) -> str:
+    name_words = _tokenize_words(name)
+    if len(name_words) >= 2:
+        return " ".join(name_words[:4])
+    return "Tasty menu item"
+
+
+def _ensure_short_description(description: str, name: str) -> str:
+    words = _tokenize_words(description)
+
+    if not words:
+        return _fallback_description_from_name(name)
+
+    if len(words) == 1:
+        words.append("special")
+
+    if len(words) > 4:
+        words = words[:4]
+
+    return " ".join(words)
+
+
 def _extract_json_text(raw_content: Any) -> str:
     # Support providers that return arrays for multimodal content
     if isinstance(raw_content, list):
@@ -54,7 +80,10 @@ def structure_response(llm_result: Dict[str, Any]) -> Dict[str, Any]:
             category.setdefault("items", [])
             for item in category.get("items", []) or []:
                 item.setdefault("name", "")
-                item.setdefault("description", "")
+                item["description"] = _ensure_short_description(
+                    item.get("description", ""),
+                    item.get("name", ""),
+                )
                 item.setdefault("price", "")
         return structured
     except Exception as e:

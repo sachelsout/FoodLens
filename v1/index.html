@@ -813,6 +813,111 @@
     clearBtn.addEventListener('click', clearFileInfo);
 
     // Menu rendering
+    const FOOD_LOADING_GIF_URL = window.config.FOOD_LOADING_GIF_URL || 'https://media.tenor.com/ISrJxA8fwgAAAAAM/hotdog-fast-food.gif';
+
+    function loadingImageFallbackSvg() {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+          <rect width="100%" height="100%" fill="#f1f5f9"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+                fill="#64748b" font-family="Inter, Arial, sans-serif" font-size="22">
+            Generating image...
+          </text>
+        </svg>
+      `;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    function loadingImagePlaceholder() {
+      return FOOD_LOADING_GIF_URL || loadingImageFallbackSvg();
+    }
+
+    function unavailableImagePlaceholder() {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+          <rect width="100%" height="100%" fill="#f1f5f9"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+                fill="#64748b" font-family="Inter, Arial, sans-serif" font-size="22">
+            Image not available
+          </text>
+        </svg>
+      `;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    async function fetchItemImage(item, categoryName) {
+      const response = await fetch(`${window.config.API_BASE_URL}/generate_item_image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item, category_name: categoryName })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Image request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.image_url || null;
+    }
+
+    async function fillImagesProgressively(imageTasks, maxConcurrent = 3) {
+      let nextIndex = 0;
+      let loadedCount = 0;
+      let failedCount = 0;
+
+      async function worker() {
+        while (nextIndex < imageTasks.length) {
+          const currentIndex = nextIndex++;
+          const task = imageTasks[currentIndex];
+
+          try {
+            const imageUrl = await fetchItemImage(task.item, task.categoryName);
+            if (imageUrl) {
+              task.imgEl.dataset.imageStage = 'generated';
+              task.imgEl.src = imageUrl;
+              loadedCount += 1;
+            } else {
+              task.imgEl.dataset.imageStage = 'generated';
+              task.imgEl.src = unavailableImagePlaceholder();
+              failedCount += 1;
+            }
+          } catch {
+            task.imgEl.dataset.imageStage = 'generated';
+            task.imgEl.src = unavailableImagePlaceholder();
+            failedCount += 1;
+          }
+        }
+      }
+
+      const workerCount = Math.min(maxConcurrent, imageTasks.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+      return { loadedCount, failedCount };
+    }
+
+    async function fileToOptimizedBase64(file, maxDimension = 1600, quality = 0.82) {
+      const imageBitmap = await createImageBitmap(file);
+      const sourceWidth = imageBitmap.width;
+      const sourceHeight = imageBitmap.height;
+
+      const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+      const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+      const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Unable to initialize canvas context.');
+      }
+
+      ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      return dataUrl.split(',')[1];
+    }
+
     async function renderMenu(outputElement, structured) {
       outputElement.innerHTML = '';
       
@@ -828,6 +933,8 @@
         title.textContent = structured.restaurant_name;
         outputElement.appendChild(title);
       }
+
+      const imageTasks = [];
 
       // Categories and items
       for (const category of structured.categories) {
@@ -866,16 +973,33 @@
           dishInfo.appendChild(price);
 
           // Image
-          if (item.image_url && item.image_url.startsWith('http')) {
-            const img = document.createElement('img');
-            img.className = 'dish-image';
-            img.src = item.image_url;
-            img.alt = item.name || 'Menu item';
-            img.loading = 'lazy';
-            img.onerror = () => img.style.display = 'none';
-            
-            card.appendChild(img);
+          const img = document.createElement('img');
+          img.className = 'dish-image';
+          img.dataset.imageStage = 'loading';
+          img.src = item.image_url || loadingImagePlaceholder();
+          img.alt = item.name || 'Menu item';
+          img.loading = 'lazy';
+          img.onerror = () => {
+            if (img.dataset.imageStage === 'loading') {
+              img.src = loadingImageFallbackSvg();
+              return;
+            }
+            img.src = unavailableImagePlaceholder();
+          };
+
+          if (item.image_url) {
+            img.dataset.imageStage = 'generated';
           }
+
+          if (!item.image_url) {
+            imageTasks.push({
+              imgEl: img,
+              item,
+              categoryName: category.name || ''
+            });
+          }
+
+          card.appendChild(img);
 
           card.appendChild(dishInfo);
           menuGrid.appendChild(card);
@@ -886,6 +1010,12 @@
       }
 
       showSuccess(`Successfully extracted ${structured.categories.reduce((total, cat) => total + (cat.items?.length || 0), 0)} menu items!`);
+
+      if (imageTasks.length > 0) {
+        fillImagesProgressively(imageTasks).then(({ loadedCount, failedCount }) => {
+          showSuccess(`Images updated: ${loadedCount} loaded, ${failedCount} unavailable.`);
+        });
+      }
     }
 
     // Scan button
@@ -895,12 +1025,17 @@
       const hideLoadingFn = showLoading();
       
       try {
-        const imgBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedFile);
-        });
+        let imgBase64;
+        try {
+          imgBase64 = await fileToOptimizedBase64(selectedFile);
+        } catch {
+          imgBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(selectedFile);
+          });
+        }
 
         const response = await fetch(`${window.config.API_BASE_URL}/vision_extract`, {
           method: 'POST',

@@ -1,0 +1,15 @@
+# Local Python environments
+venv/
+.venv/
+
+# Vercel local build/cache artifacts
+.vercel/
+v1/.vercel/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+.env.*
